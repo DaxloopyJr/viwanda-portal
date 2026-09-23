@@ -14,6 +14,7 @@ class Submission extends Model
         'returned_supervisor' => 'Returned to supervisor',
         'submitted' => 'Submitted',
         'under_review' => 'Under review',
+        'pending_approval' => 'Pending final approval',
         'returned' => 'Returned',
         'accepted' => 'Accepted',
         'rejected' => 'Rejected',
@@ -22,12 +23,12 @@ class Submission extends Model
 
     public const STATUSES = [
         'draft', 'internal_review', 'returned_officer', 'accounting_review', 'returned_supervisor',
-        'submitted', 'under_review', 'returned', 'accepted', 'rejected', 'published',
+        'submitted', 'under_review', 'pending_approval', 'returned', 'accepted', 'rejected', 'published',
     ];
 
     protected $fillable = [
-        'reference', 'transaction_reference', 'institution_id', 'dataset_id',
-        'reporting_period', 'channel', 'status', 'submitted_by', 'submitted_at',
+        'reference', 'batch_reference', 'transaction_reference', 'institution_id', 'dataset_id',
+        'reporting_period', 'channel', 'consumers', 'status', 'submitted_by', 'submitted_at',
         'reviewed_by', 'reviewed_at', 'review_comments', 'validation_errors',
         'published_at', 'records_count',
     ];
@@ -36,6 +37,7 @@ class Submission extends Model
     {
         return [
             'validation_errors' => 'array',
+            'consumers' => 'array',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'published_at' => 'datetime',
@@ -75,6 +77,30 @@ class Submission extends Model
         return sprintf('VP-%s-%05d', $year, $count);
     }
 
+    public static function nextBatchReference(): string
+    {
+        $year = now()->format('Y');
+        $count = static::whereNotNull('batch_reference')
+            ->whereYear('created_at', $year)
+            ->distinct()->count('batch_reference') + 1;
+
+        return sprintf('VPB-%s-%05d', $year, $count);
+    }
+
+    /**
+     * All submissions that were created together with this one as a batch
+     * (one per dataset). Returns just this submission when it stands alone.
+     */
+    public function batchSiblings()
+    {
+        if (! $this->batch_reference) {
+            return collect([$this]);
+        }
+
+        return static::with('dataset')->where('batch_reference', $this->batch_reference)
+            ->orderBy('id')->get();
+    }
+
     public function isEditable(): bool
     {
         return in_array($this->status, ['draft', 'returned_officer', 'returned'], true);
@@ -90,6 +116,7 @@ class Submission extends Model
             'returned_supervisor' => 'Returned to supervisor',
             'submitted' => 'Submitted',
             'under_review' => 'Under review',
+            'pending_approval' => 'Pending final approval',
             'returned' => 'Returned',
             'accepted' => 'Accepted',
             'rejected' => 'Rejected',
@@ -107,6 +134,7 @@ class Submission extends Model
             'returned_supervisor' => 'orange',
             'submitted' => 'info',
             'under_review' => 'warning',
+            'pending_approval' => 'purple',
             'returned' => 'orange',
             'accepted' => 'success',
             'rejected' => 'danger',

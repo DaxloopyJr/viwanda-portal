@@ -1,5 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Portal Settings')
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="#">Administration</a></li>
+    <li class="breadcrumb-item active">Portal Settings</li>
+@endsection
+
 @section('content')
 <div class="row g-3">
     <div class="col-lg-7">

@@ -25,8 +25,9 @@ class SubmissionSeeder extends Seeder
                 'transaction_reference' => 'FCT-2021-Q3-001',
                 'institution_id' => $fct->id,
                 'dataset_id' => $dataset->id,
-                'reporting_period' => '2021-Q3',
+                'reporting_period' => '2021 - Q3',
                 'channel' => 'portal',
+                'consumers' => ['TR', 'MIT', 'Public'],
                 'status' => 'published',
                 'submitted_by' => $officer->id,
                 'submitted_at' => '2021-10-05 09:30:00',
@@ -75,22 +76,22 @@ class SubmissionSeeder extends Seeder
                 ['region' => 'Arusha', 'district' => 'Arusha City', 'subsector' => 'Textiles', 'establishments' => 62, 'employment' => 890, 'remarks' => null],
                 ['region' => 'Mwanza', 'district' => 'Ilemela', 'subsector' => 'Food processing', 'establishments' => 88, 'employment' => 1204, 'remarks' => null],
             ],
-            'TBS-PC' => [
-                ['date' => '2026-01-20', 'product' => 'Bottled drinking water', 'company' => 'Kilimanjaro Water Ltd', 'standard' => 'TZS 789', 'certificate_status' => 'Issued', 'remarks' => null],
-                ['date' => '2026-02-14', 'product' => 'Wheat flour', 'company' => 'Azam Millers', 'standard' => 'TZS 439', 'certificate_status' => 'Renewed', 'remarks' => null],
-                ['date' => '2026-03-03', 'product' => 'Cement', 'company' => 'Twiga Cement', 'standard' => 'TZS 727', 'certificate_status' => 'Suspended', 'remarks' => 'Pending surveillance audit'],
+            'TBS-PCI' => [
+                ['date' => '2026-01-20', 'company' => 'Kilimanjaro Water Ltd', 'product' => 'Bottled drinking water', 'certificate_no' => 'TZS/SM/2026/0101', 'client_category' => 'Large enterprise', 'status' => 'Issued'],
+                ['date' => '2026-02-14', 'company' => 'Azam Millers', 'product' => 'Wheat flour', 'certificate_no' => 'TZS/SM/2026/0158', 'client_category' => 'SME', 'status' => 'Renewed'],
+                ['date' => '2026-03-03', 'company' => 'Mbinga Coffee Cooperative', 'product' => 'Roasted coffee', 'certificate_no' => 'TZS/SM/2026/0204', 'client_category' => 'Medium enterprise', 'status' => 'Issued'],
             ],
         ];
 
         $plan = [
-            ['dataset' => 'FCC-CN', 'period' => '2026-Q1', 'channel' => 'api', 'status' => 'published'],
-            ['dataset' => 'FCC-CN', 'period' => '2026-Q2', 'channel' => 'api', 'status' => 'under_review'],
-            ['dataset' => 'SIDO-IE', 'period' => '2026-Q1', 'channel' => 'upload', 'status' => 'accepted'],
-            ['dataset' => 'SIDO-IE', 'period' => '2026-Q2', 'channel' => 'portal', 'status' => 'submitted'],
-            ['dataset' => 'TBS-PC', 'period' => '2026-Q1', 'channel' => 'api', 'status' => 'published'],
-            ['dataset' => 'TBS-PC', 'period' => '2026-Q2', 'channel' => 'api', 'status' => 'returned'],
-            ['dataset' => 'FCT-AC', 'period' => '2026-Q1', 'channel' => 'portal', 'status' => 'accepted'],
-            ['dataset' => 'FCT-AC', 'period' => '2026-Q2', 'channel' => 'portal', 'status' => 'draft'],
+            ['dataset' => 'FCC-CN', 'period' => '2026 - Q1', 'channel' => 'api', 'status' => 'published'],
+            ['dataset' => 'FCC-CN', 'period' => '2026 - Q2', 'channel' => 'api', 'status' => 'under_review'],
+            ['dataset' => 'SIDO-IE', 'period' => '2026 - Q1', 'channel' => 'upload', 'status' => 'accepted'],
+            ['dataset' => 'SIDO-IE', 'period' => '2026 - Q2', 'channel' => 'portal', 'status' => 'submitted'],
+            ['dataset' => 'TBS-PCI', 'period' => '2026 - Q1', 'channel' => 'api', 'status' => 'published'],
+            ['dataset' => 'TBS-PCI', 'period' => '2026 - Q2', 'channel' => 'api', 'status' => 'returned'],
+            ['dataset' => 'FCT-AC', 'period' => '2026 - Q1', 'channel' => 'portal', 'status' => 'accepted'],
+            ['dataset' => 'FCT-AC', 'period' => '2026 - Q2', 'channel' => 'portal', 'status' => 'draft'],
         ];
 
         foreach ($plan as $i => $item) {

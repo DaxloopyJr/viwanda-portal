@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Department;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -25,8 +26,20 @@ class UserSeeder extends Seeder
                 'role' => 'Department Data Reviewer', 'institution' => null,
             ],
             [
+                'name' => 'Ministry Final Approver', 'email' => 'approver@viwanda.go.tz',
+                'role' => 'Ministry Final Approver', 'institution' => null,
+            ],
+            [
+                'name' => 'Industry Dept. Data Officer', 'email' => 'dept.officer@viwanda.go.tz',
+                'role' => 'Ministry Department Data Officer', 'institution' => null, 'department' => 'IND',
+            ],
+            [
                 'name' => 'FCT Data Officer', 'email' => 'fct.officer@fct.go.tz',
                 'role' => 'Institution Data Officer', 'institution' => 'FCT',
+            ],
+            [
+                'name' => 'TBS Data Officer', 'email' => 'tbs.officer@tbs.go.tz',
+                'role' => 'Institution Data Officer', 'institution' => 'TBS',
             ],
             [
                 'name' => 'FCT Institution Admin', 'email' => 'admin.fct@fct.go.tz',
@@ -58,6 +71,9 @@ class UserSeeder extends Seeder
                     'password' => Hash::make('password'),
                     'institution_id' => $data['institution']
                         ? Institution::where('code', $data['institution'])->firstOrFail()->id
+                        : null,
+                    'department_id' => ! empty($data['department'])
+                        ? Department::where('code', $data['department'])->firstOrFail()->id
                         : null,
                     'is_active' => true,
                     'email_verified_at' => now(),

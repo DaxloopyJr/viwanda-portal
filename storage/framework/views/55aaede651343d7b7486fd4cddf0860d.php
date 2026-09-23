@@ -1,11 +1,16 @@
 <?php $__env->startSection('title', 'Submission '.$submission->reference); ?>
+<?php $__env->startSection('breadcrumb'); ?>
+    <li class="breadcrumb-item"><a href="<?php echo e(route('submissions.index')); ?>">Submissions</a></li>
+    <li class="breadcrumb-item active"><?php echo e($submission->reference); ?></li>
+<?php $__env->stopSection(); ?>
+
 <?php $__env->startSection('content'); ?>
 <div class="row g-3">
     <div class="col-lg-8">
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><?php echo e($submission->reference); ?> — <?php echo e($submission->dataset->name); ?></span>
-                <span class="badge text-bg-<?php echo e($submission->statusBadge()); ?> fs-6"><?php echo e(str_replace('_',' ',ucfirst($submission->status))); ?></span>
+                <span class="badge text-bg-<?php echo e($submission->statusBadge()); ?> fs-6"><?php echo e($submission->statusLabel()); ?></span>
             </div>
             <div class="card-body">
                 <div class="row small">
@@ -34,9 +39,15 @@
                 <?php if($submission->isEditable()): ?>
                     <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.edit-own')): ?>
                     <a href="<?php echo e(route('submissions.edit', $submission)); ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit records</a>
+                    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.submit-internal')): ?>
+                    <form method="POST" action="<?php echo e(route('submissions.submit', $submission)); ?>" onsubmit="return confirm('Submit to the supervisor for internal review?')"><?php echo csrf_field(); ?>
+                        <button class="btn btn-sm btn-success"><i class="bi bi-send"></i> Submit to supervisor</button>
+                    </form>
+                    <?php else: ?>
                     <form method="POST" action="<?php echo e(route('submissions.submit', $submission)); ?>" onsubmit="return confirm('Submit for Ministry review?')"><?php echo csrf_field(); ?>
                         <button class="btn btn-sm btn-success"><i class="bi bi-send"></i> Submit for review</button>
                     </form>
+                    <?php endif; ?>
                     <?php endif; ?>
                     <?php if($submission->status === 'draft'): ?>
                     <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.delete-own')): ?>
@@ -44,6 +55,22 @@
                         <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete draft</button>
                     </form>
                     <?php endif; ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.review-internal')): ?>
+                    <?php if(in_array($submission->status, ['internal_review','returned_supervisor'])): ?>
+                    <form method="POST" action="<?php echo e(route('submissions.internal.forward', $submission)); ?>" onsubmit="return confirm('Forward to the institutional accounting officer?')"><?php echo csrf_field(); ?>
+                        <button class="btn btn-sm btn-teal text-white"><i class="bi bi-forward"></i> Forward to accounting officer</button>
+                    </form>
+                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#returnOfficerModal"><i class="bi bi-arrow-counterclockwise"></i> Return to officer</button>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.approve-internal')): ?>
+                    <?php if($submission->status === 'accounting_review'): ?>
+                    <form method="POST" action="<?php echo e(route('submissions.internal.approve', $submission)); ?>" onsubmit="return confirm('Approve and submit to the Ministry (Viwanda)?')"><?php echo csrf_field(); ?>
+                        <button class="btn btn-sm btn-success"><i class="bi bi-check2-circle"></i> Approve &amp; submit to Ministry</button>
+                    </form>
+                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#returnSupervisorModal"><i class="bi bi-arrow-counterclockwise"></i> Return to supervisor</button>
                     <?php endif; ?>
                 <?php endif; ?>
                 <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('submissions.review')): ?>
@@ -74,8 +101,9 @@
 
         <div class="card">
             <div class="card-header">Records (<?php echo e($submission->records_count); ?>)</div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-striped mb-0">
+            <div class="card-body">
+                <div class="table-responsive">
+                <table id="recordsTable" class="table table-striped w-100">
                     <thead><tr><th>#</th><?php $__currentLoopData = $submission->dataset->fields; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $f): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><th><?php echo e($f['label']); ?></th><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></tr></thead>
                     <tbody>
                     <?php $__currentLoopData = $submission->records; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $record): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -94,6 +122,7 @@
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>
@@ -105,7 +134,7 @@
                 <ul class="list-unstyled mb-0">
                 <?php $__empty_1 = true; $__currentLoopData = $audits; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $log): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <li class="mb-3">
-                        <div class="fw-semibold small"><?php echo e(str_replace('.', ' — ', $log->action)); ?></div>
+                        <div class="fw-semibold small"><?php echo e(str_replace('_', ' ', str_replace('.', ' — ', $log->action))); ?></div>
                         <div class="text-muted small"><?php echo e($log->user?->name ?? 'System'); ?> · <?php echo e($log->created_at->format('d M Y H:i')); ?></div>
                     </li>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -116,6 +145,30 @@
         </div>
     </div>
 </div>
+
+
+<div class="modal fade" id="returnOfficerModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="<?php echo e(route('submissions.internal.return-officer', $submission)); ?>"><?php echo csrf_field(); ?>
+    <div class="modal-header"><h5 class="modal-title">Return to data officer</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <label class="form-label">Rectification comments for the officer <span class="text-danger">*</span></label>
+        <textarea name="review_comments" class="form-control" rows="4" required></textarea>
+    </div>
+    <div class="modal-footer"><button class="btn btn-warning">Return to officer</button></div>
+    </form>
+</div></div></div>
+
+
+<div class="modal fade" id="returnSupervisorModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <form method="POST" action="<?php echo e(route('submissions.internal.return-supervisor', $submission)); ?>"><?php echo csrf_field(); ?>
+    <div class="modal-header"><h5 class="modal-title">Return to supervisor</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <label class="form-label">Comments for the supervisor <span class="text-danger">*</span></label>
+        <textarea name="review_comments" class="form-control" rows="4" required></textarea>
+    </div>
+    <div class="modal-footer"><button class="btn btn-warning">Return to supervisor</button></div>
+    </form>
+</div></div></div>
 
 
 <div class="modal fade" id="returnModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
@@ -141,5 +194,11 @@
     </form>
 </div></div></div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+vpDataTable('#recordsTable', null, null, { pageLength: 10, order: [] });
+</script>
+<?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\viwanda-portal\resources\views/submissions/show.blade.php ENDPATH**/ ?>

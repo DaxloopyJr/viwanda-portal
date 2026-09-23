@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Department;
 use App\Models\Institution;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -31,6 +32,7 @@ class UserController extends Controller
             'user' => new User,
             'roles' => $this->assignableRoles(),
             'institutions' => $this->assignableInstitutions(),
+            'departments' => $this->isInstitutionAdmin() ? collect() : Department::where('is_active', true)->orderBy('name')->get(),
             'lockedInstitution' => $this->isInstitutionAdmin(),
         ]);
     }
@@ -46,6 +48,7 @@ class UserController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'institution_id' => $data['institution_id'] ?? null,
+            'department_id' => $data['department_id'] ?? null,
             'is_active' => $request->boolean('is_active', true),
         ]);
         $user->syncRoles($data['roles'] ?? []);
@@ -63,6 +66,7 @@ class UserController extends Controller
             'user' => $user->load('roles'),
             'roles' => $this->assignableRoles(),
             'institutions' => $this->assignableInstitutions(),
+            'departments' => $this->isInstitutionAdmin() ? collect() : Department::where('is_active', true)->orderBy('name')->get(),
             'lockedInstitution' => $this->isInstitutionAdmin(),
         ]);
     }
@@ -79,6 +83,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'institution_id' => $data['institution_id'] ?? null,
+            'department_id' => $data['department_id'] ?? null,
             'is_active' => $request->boolean('is_active'),
         ] + (empty($data['password']) ? [] : ['password' => Hash::make($data['password'])]));
         $user->syncRoles($data['roles'] ?? []);
@@ -173,9 +178,41 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'.($id ? ','.$id : '')],
             'password' => [$passwordRequired ? 'required' : 'nullable', 'confirmed', Password::min(8)],
             'institution_id' => ['nullable', 'exists:institutions,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['exists:roles,name'],
             'is_active' => ['boolean'],
         ]);
     }
+
+    /** JSON feed for the AJAX users table (DataTables). */
+    public function datatable()
+    {
+        $this->authorizeManage();
+
+        $rows = $this->scopedQuery()->with(['institution', 'department', 'roles'])->orderBy('name')->get()
+            ->map(function (User $u) {
+                $roles = $u->roles->map(fn ($r) => '<span class="badge text-bg-primary me-1">'.e($r->name).'</span>')->implode('');
+                $delete = $u->id !== auth()->id()
+                    ? '<form method="POST" action="'.route('users.destroy', $u).'" class="d-inline" onsubmit="return confirm(\'Delete '.e($u->name).'?\')">'
+                        .'<input type="hidden" name="_token" value="'.csrf_token().'">'
+                        .'<input type="hidden" name="_method" value="DELETE">'
+                        .'<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>'
+                    : '';
+
+                return [
+                    'name' => '<span class="fw-semibold">'.e($u->name).'</span>',
+                    'email' => e($u->email),
+                    'institution' => e($u->institution->name ?? ($u->department ? 'MIT — '.$u->department->name : '— Ministry —')),
+                    'roles' => $roles,
+                    'status' => $u->is_active
+                        ? '<span class="badge text-bg-success">Active</span>'
+                        : '<span class="badge text-bg-secondary">Disabled</span>',
+                    'actions' => '<a href="'.route('users.edit', $u).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a> '.$delete,
+                ];
+            });
+
+        return response()->json(['data' => $rows]);
+    }
+
 }

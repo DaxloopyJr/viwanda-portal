@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Dataset extends Model
 {
     protected $fillable = [
-        'code', 'name', 'description', 'institution_id', 'frequency',
-        'priority', 'source_system', 'consumers', 'fields', 'is_active',
+        'code', 'name', 'description', 'institution_id', 'department_id', 'department',
+        'frequency', 'priority', 'source_system', 'consumers', 'fields', 'is_active',
     ];
 
     protected function casts(): array
@@ -22,6 +22,25 @@ class Dataset extends Model
     public function institution()
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    /** Ministry department that owns this dataset (ministry-internal catalogue entries). */
+    public function ministryDepartment()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    /** Human-readable owner: institution, ministry department, or ministry-wide. */
+    public function ownerLabel(): string
+    {
+        if ($this->institution) {
+            return $this->institution->code;
+        }
+        if ($this->ministryDepartment) {
+            return 'MIT / '.$this->ministryDepartment->code;
+        }
+
+        return 'Ministry';
     }
 
     public function submissions()

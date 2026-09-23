@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 /**
  * Internal institutional approval chain:
  *   officer -> supervisor -> accounting officer -> Ministry (viwanda)
+ *
+ * Every action applies to the whole submission batch: all batch members whose
+ * current status matches the action's precondition move together.
  */
 class InternalReviewController extends Controller
 {
@@ -17,13 +20,15 @@ class InternalReviewController extends Controller
     {
         $this->authorize('submissions.review-internal');
         $this->guardInstitution($submission);
-        abort_unless(in_array($submission->status, ['internal_review', 'returned_supervisor'], true),
-            422, 'Only submissions awaiting internal review can be forwarded.');
+        $targets = $this->targets($submission, ['internal_review', 'returned_supervisor'],
+            'Only submissions awaiting internal review can be forwarded.');
 
-        $submission->update(['review_comments' => null]);
-        $this->transition($submission, 'accounting_review', 'internal.forwarded');
+        foreach ($targets as $target) {
+            $target->update(['review_comments' => null]);
+            $this->transition($target, 'accounting_review', 'internal.forwarded');
+        }
 
-        return back()->with('success', 'Submission forwarded to the institutional accounting officer.');
+        return back()->with('success', $this->message($submission, $targets, 'forwarded to the institutional accounting officer'));
     }
 
     /** Supervisor returns a submission to the data officer for rectification. */
@@ -31,14 +36,16 @@ class InternalReviewController extends Controller
     {
         $this->authorize('submissions.review-internal');
         $this->guardInstitution($submission);
-        abort_unless(in_array($submission->status, ['internal_review', 'returned_supervisor'], true),
-            422, 'Only submissions awaiting internal review can be returned.');
+        $targets = $this->targets($submission, ['internal_review', 'returned_supervisor'],
+            'Only submissions awaiting internal review can be returned.');
         $request->validate(['review_comments' => ['required', 'string', 'max:2000']]);
 
-        $submission->update(['review_comments' => $request->input('review_comments')]);
-        $this->transition($submission, 'returned_officer', 'internal.returned_officer');
+        foreach ($targets as $target) {
+            $target->update(['review_comments' => $request->input('review_comments')]);
+            $this->transition($target, 'returned_officer', 'internal.returned_officer');
+        }
 
-        return back()->with('success', 'Submission returned to the data officer for rectification.');
+        return back()->with('success', $this->message($submission, $targets, 'returned to the data officer for rectification'));
     }
 
     /** Accounting officer approves and submits the data/report to the Ministry (viwanda). */
@@ -46,16 +53,15 @@ class InternalReviewController extends Controller
     {
         $this->authorize('submissions.approve-internal');
         $this->guardInstitution($submission);
-        abort_unless($submission->status === 'accounting_review',
-            422, 'Only submissions awaiting accounting approval can be approved.');
+        $targets = $this->targets($submission, ['accounting_review'],
+            'Only submissions awaiting accounting approval can be approved.');
 
-        $submission->update([
-            'review_comments' => null,
-            'submitted_at' => now(),
-        ]);
-        $this->transition($submission, 'submitted', 'internal.approved');
+        foreach ($targets as $target) {
+            $target->update(['review_comments' => null, 'submitted_at' => now()]);
+            $this->transition($target, 'submitted', 'internal.approved');
+        }
 
-        return back()->with('success', "Submission {$submission->reference} approved and sent to the Ministry for review.");
+        return back()->with('success', $this->message($submission, $targets, 'approved and sent to the Ministry for review'));
     }
 
     /** Accounting officer returns a submission to the supervisor. */
@@ -63,14 +69,29 @@ class InternalReviewController extends Controller
     {
         $this->authorize('submissions.approve-internal');
         $this->guardInstitution($submission);
-        abort_unless($submission->status === 'accounting_review',
-            422, 'Only submissions awaiting accounting approval can be returned.');
+        $targets = $this->targets($submission, ['accounting_review'],
+            'Only submissions awaiting accounting approval can be returned.');
         $request->validate(['review_comments' => ['required', 'string', 'max:2000']]);
 
-        $submission->update(['review_comments' => $request->input('review_comments')]);
-        $this->transition($submission, 'returned_supervisor', 'internal.returned_supervisor');
+        foreach ($targets as $target) {
+            $target->update(['review_comments' => $request->input('review_comments')]);
+            $this->transition($target, 'returned_supervisor', 'internal.returned_supervisor');
+        }
 
-        return back()->with('success', 'Submission returned to the supervisor.');
+        return back()->with('success', $this->message($submission, $targets, 'returned to the supervisor'));
+    }
+
+    /**
+     * The batch members eligible for this action: all siblings already in one of
+     * the allowed statuses. The clicked submission itself must be eligible.
+     */
+    private function targets(Submission $submission, array $statuses, string $error)
+    {
+        abort_unless(in_array($submission->status, $statuses, true), 422, $error);
+
+        return $submission->batchSiblings()->filter(
+            fn (Submission $s) => in_array($s->status, $statuses, true)
+        )->values();
     }
 
     private function guardInstitution(Submission $submission): void
@@ -83,5 +104,15 @@ class InternalReviewController extends Controller
         $old = $submission->status;
         $submission->update(['status' => $to]);
         AuditLog::record($action, $submission, ['status' => $old], ['status' => $to]);
+    }
+
+    private function message(Submission $submission, $targets, string $what): string
+    {
+        $count = $targets->count();
+        if ($submission->batch_reference && $count > 1) {
+            return "Batch {$submission->batch_reference}: {$count} submissions {$what}.";
+        }
+
+        return "Submission {$submission->reference} {$what}.";
     }
 }

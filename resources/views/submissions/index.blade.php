@@ -1,46 +1,61 @@
 @extends('layouts.app')
 @section('title', 'Submissions')
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="#">Submissions</a></li>
+    <li class="breadcrumb-item active">All submissions</li>
+@endsection
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <form class="d-flex gap-2" method="GET">
-        <select name="status" class="form-select form-select-sm" style="width:auto">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="d-flex gap-2">
+        <select id="filterStatus" class="form-select">
             <option value="">All statuses</option>
-            @foreach($statuses as $st)<option value="{{ $st }}" @selected(request('status') === $st)>{{ str_replace('_',' ',ucfirst($st)) }}</option>@endforeach
+            @foreach($statuses as $st)<option value="{{ $st }}">{{ \App\Models\Submission::STATUS_LABELS[$st] ?? ucfirst(str_replace('_',' ',$st)) }}</option>@endforeach
         </select>
-        <select name="period" class="form-select form-select-sm" style="width:auto">
+        <select id="filterPeriod" class="form-select">
             <option value="">All periods</option>
-            @foreach($periods as $p)<option value="{{ $p }}" @selected(request('period') === $p)>{{ $p }}</option>@endforeach
+            @foreach($periods as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach
         </select>
-        <button class="btn btn-sm btn-primary">Filter</button>
-    </form>
+    </div>
     @can('submissions.create')
     <a href="{{ route('submissions.create') }}" class="btn btn-success"><i class="bi bi-plus-lg"></i> New Submission</a>
     @endcan
 </div>
-
-<div class="card">
-    <div class="card-body table-responsive p-0">
-        <table class="table table-striped table-hover mb-0">
-            <thead><tr><th>Reference</th><th>Institution</th><th>Dataset</th><th>Period</th><th>Channel</th><th>Records</th><th>Status</th><th>Submitted</th><th></th></tr></thead>
-            <tbody>
-            @forelse($submissions as $s)
-                <tr>
-                    <td class="fw-semibold">{{ $s->reference }}</td>
-                    <td>{{ $s->institution->code }}</td>
-                    <td>{{ $s->dataset->code }} — {{ $s->dataset->name }}</td>
-                    <td>{{ $s->reporting_period }}</td>
-                    <td><span class="badge text-bg-light text-uppercase">{{ $s->channel }}</span></td>
-                    <td>{{ $s->records_count }}</td>
-                    <td><span class="badge text-bg-{{ $s->statusBadge() }}">{{ str_replace('_',' ',ucfirst($s->status)) }}</span></td>
-                    <td>{{ $s->submitted_at?->format('d M Y H:i') ?? '—' }}</td>
-                    <td><a href="{{ route('submissions.show', $s) }}" class="btn btn-sm btn-outline-primary">Open</a></td>
-                </tr>
-            @empty
-                <tr><td colspan="9" class="text-center text-muted py-4">No submissions found.</td></tr>
-            @endforelse
-            </tbody>
+<div class="card"><div class="card-body">
+    <div class="table-responsive">
+        <table id="submissionsTable" class="table table-striped table-hover w-100">
+            <thead><tr>
+                <th>Reference</th><th>Institution</th><th>Dataset</th><th>Period</th>
+                <th>Channel</th><th>Status</th><th>Records</th><th>Submitted By</th><th>Created</th>
+            </tr></thead>
         </table>
     </div>
-    @if($submissions->hasPages())<div class="card-footer">{{ $submissions->links() }}</div>@endif
-</div>
+</div></div>
 @endsection
+
+@push('scripts')
+<script>
+const subsTable = vpDataTable('#submissionsTable', '{{ route('submissions.datatable') }}', [
+    { data: 'reference', name: 'reference' },
+    { data: 'institution', name: 'institution' },
+    { data: 'dataset', name: 'dataset' },
+    { data: 'period', name: 'period' },
+    { data: 'channel', name: 'channel' },
+    { data: 'status', name: 'status' },
+    { data: 'records', name: 'records' },
+    { data: 'submitter', name: 'submitter' },
+    { data: 'created', name: 'created' }
+], { order: [[8, 'desc']] });
+
+function reloadWithFilters() {
+    const params = new URLSearchParams();
+    const st = document.getElementById('filterStatus').value;
+    const pe = document.getElementById('filterPeriod').value;
+    if (st) params.set('status', st);
+    if (pe) params.set('period', pe);
+    subsTable.ajax.url('{{ route('submissions.datatable') }}' + (params.toString() ? '?' + params.toString() : '')).load();
+}
+document.getElementById('filterStatus').addEventListener('change', reloadWithFilters);
+document.getElementById('filterPeriod').addEventListener('change', reloadWithFilters);
+</script>
+@endpush

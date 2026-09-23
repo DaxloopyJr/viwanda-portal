@@ -1,21 +1,28 @@
-<?php $__env->startSection('title', 'Sign in'); ?>
+<?php $__env->startSection('title', __('Sign in')); ?>
 <?php $__env->startSection('content'); ?>
 <form method="POST" action="<?php echo e(route('login')); ?>">
     <?php echo csrf_field(); ?>
     <div class="mb-3">
-        <label class="form-label">Email address</label>
-        <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" required autofocus>
+        <label class="sa-form-label mb-1"><?php echo e(__('Email address')); ?></label>
+        <div class="input-group sa-input-group">
+            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+            <input type="email" name="email" class="form-control" value="<?php echo e(old('email')); ?>" placeholder="<?php echo e(__('Enter email address')); ?>" required autofocus>
+        </div>
     </div>
     <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input type="password" name="password" class="form-control" required>
+        <label class="sa-form-label mb-1"><?php echo e(__('Password')); ?></label>
+        <div class="input-group sa-input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" name="password" class="form-control" placeholder="<?php echo e(__('Enter password')); ?>" required>
+        </div>
     </div>
-    <div class="form-check mb-3">
+    <div class="form-check mb-4">
         <input class="form-check-input" type="checkbox" name="remember" id="remember">
-        <label class="form-check-label" for="remember">Remember me</label>
+        <label class="form-check-label small" for="remember"><?php echo e(__('Remember me')); ?></label>
     </div>
-    <button class="btn btn-primary w-100" style="background:#1a3c6e">Sign in</button>
-    <p class="text-center small mt-3 mb-0">Institution officer? <a href="<?php echo e(route('register')); ?>">Register an account</a></p>
+    <button class="btn btn-sa-primary w-100"><?php echo e(__('Sign in')); ?> <i class="bi bi-arrow-right ms-1"></i></button>
+    <p class="text-center small mt-3 mb-0 text-muted"><?php echo e(__('Accounts are issued by your institution administrator.')); ?></p>
+    <p class="text-center small mt-2 mb-0"><a class="auth-footer-link" href="<?php echo e(route('landing')); ?>">&larr; <?php echo e(__('Back to portal home')); ?></a></p>
 </form>
 <?php $__env->stopSection(); ?>
 

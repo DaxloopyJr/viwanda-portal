@@ -23,6 +23,7 @@ class InstitutionSeeder extends Seeder
             ['code' => 'CARMATEC', 'name' => 'Centre for Agricultural Mechanization and Rural Technology', 'integration_mode' => 'manual'],
             ['code' => 'CBE', 'name' => 'College of Business Education', 'integration_mode' => 'manual'],
             ['code' => 'TADB', 'name' => 'Tanzania Agricultural Development Bank', 'integration_mode' => 'api'],
+            ['code' => 'TANTRADE', 'name' => 'Tanzania Trade Development Authority', 'integration_mode' => 'manual'],
         ];
 
         foreach ($institutions as $institution) {

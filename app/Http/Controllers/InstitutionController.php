@@ -76,4 +76,34 @@ class InstitutionController extends Controller
 
         return $data;
     }
+
+    /** JSON feed for the AJAX institutions table (DataTables). */
+    public function datatable()
+    {
+        $this->authorize('institutions.manage');
+
+        $rows = Institution::withCount(['datasets', 'submissions'])->orderBy('code')->get()
+            ->map(function (Institution $i) {
+                $delete = '<form method="POST" action="'.route('institutions.destroy', $i).'" class="d-inline" onsubmit="return confirm(\'Delete '.e($i->code).'? This cannot be undone.\')">'
+                    .'<input type="hidden" name="_token" value="'.csrf_token().'">'
+                    .'<input type="hidden" name="_method" value="DELETE">'
+                    .'<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>';
+
+                return [
+                    'code' => '<code>'.e($i->code).'</code>',
+                    'name' => '<span class="fw-semibold">'.e($i->name).'</span>',
+                    'contact' => '<div class="small">'.e($i->contact_email ?: '—').'</div><div class="text-muted small">'.e($i->contact_phone ?: '').'</div>',
+                    'integration' => '<span class="badge text-bg-'.($i->integration_mode === 'api' ? 'info' : 'secondary').'">'.strtoupper($i->integration_mode).'</span>',
+                    'datasets' => (int) $i->datasets_count,
+                    'submissions' => (int) $i->submissions_count,
+                    'status' => $i->is_active
+                        ? '<span class="badge text-bg-success">Active</span>'
+                        : '<span class="badge text-bg-secondary">Inactive</span>',
+                    'actions' => '<a href="'.route('institutions.edit', $i).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a> '.$delete,
+                ];
+            });
+
+        return response()->json(['data' => $rows]);
+    }
+
 }

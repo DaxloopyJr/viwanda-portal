@@ -13,7 +13,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'institution_id', 'is_active',
+        'name', 'email', 'password', 'institution_id', 'department_id', 'is_active',
     ];
 
     protected $hidden = [
@@ -34,6 +34,11 @@ class User extends Authenticatable
         return $this->belongsTo(Institution::class);
     }
 
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function submissions()
     {
         return $this->hasMany(Submission::class, 'submitted_by');
@@ -46,5 +51,11 @@ class User extends Authenticatable
             'Institution Admin', 'Institution Data Officer', 'Institution Supervisor',
             'Institution Accounting Officer', 'Institution API Account',
         ]);
+    }
+
+    /** Ministry department officers only see their own department's data. */
+    public function isMinistryDepartmentUser(): bool
+    {
+        return $this->hasRole('Ministry Department Data Officer');
     }
 }

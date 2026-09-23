@@ -23,10 +23,13 @@ class RolePermissionSeeder extends Seeder
             'dashboard.view',
             'submissions.view', 'submissions.create', 'submissions.edit-own', 'submissions.delete-own',
             'submissions.submit-internal', 'submissions.review-internal', 'submissions.approve-internal',
-            'submissions.review', 'submissions.accept', 'submissions.return', 'submissions.reject', 'submissions.publish',
+            'submissions.review', 'submissions.recommend', 'submissions.accept',
+            'submissions.return', 'submissions.reject', 'submissions.publish',
             'reports.view', 'reports.export',
-            'institutions.manage',
+            'institutions.manage', 'departments.manage',
             'datasets.manage', 'datasets.manage-own',
+            'periods.manage', 'periods.manage-own',
+            'consumers.manage', 'consumers.manage-own',
             'users.manage', 'users.manage-own', 'roles.manage',
             'settings.manage',
             'audit.view',
@@ -40,28 +43,45 @@ class RolePermissionSeeder extends Seeder
         $roles = [
             'System Administrator' => $permissions,
             'Ministry Data Manager' => [
-                'dashboard.view', 'submissions.view', 'submissions.review',
+                'dashboard.view', 'submissions.view', 'submissions.review', 'submissions.recommend',
                 'submissions.accept', 'submissions.return', 'submissions.reject', 'submissions.publish',
                 'reports.view', 'reports.export', 'audit.view', 'datasets.manage',
+                'departments.manage', 'periods.manage', 'consumers.manage',
             ],
+            // Ministry supervisor/reviewer — reviews institution data (after accounting-officer
+            // approval) and ministry-department data, then forwards to the final approver.
             'Department Data Reviewer' => [
-                'dashboard.view', 'submissions.view', 'submissions.review',
-                'submissions.accept', 'submissions.return', 'submissions.reject', 'reports.view',
+                'dashboard.view', 'submissions.view', 'submissions.review', 'submissions.recommend',
+                'submissions.return', 'submissions.reject', 'reports.view',
+            ],
+            // Final officer — approves data from institutions and ministry departments.
+            'Ministry Final Approver' => [
+                'dashboard.view', 'submissions.view', 'submissions.accept',
+                'submissions.return', 'submissions.reject', 'submissions.publish',
+                'reports.view', 'reports.export',
+            ],
+            // Ministry department officer — prepares departmental submissions like an
+            // institutional data officer, but inside the ministry (no internal chain).
+            'Ministry Department Data Officer' => [
+                'dashboard.view', 'submissions.view', 'submissions.create',
+                'submissions.edit-own', 'submissions.delete-own', 'reports.view',
             ],
             // Institutional roles — scoped to the user's own institution
             'Institution Admin' => [
                 'dashboard.view', 'submissions.view', 'reports.view',
                 'users.manage-own', 'datasets.manage-own',
+                'periods.manage-own', 'consumers.manage-own',
             ],
             'Institution Data Officer' => [
                 'dashboard.view', 'submissions.view', 'submissions.create',
                 'submissions.edit-own', 'submissions.delete-own', 'submissions.submit-internal',
+                'reports.view',
             ],
             'Institution Supervisor' => [
-                'dashboard.view', 'submissions.view', 'submissions.review-internal',
+                'dashboard.view', 'submissions.view', 'submissions.review-internal', 'reports.view',
             ],
             'Institution Accounting Officer' => [
-                'dashboard.view', 'submissions.view', 'submissions.approve-internal',
+                'dashboard.view', 'submissions.view', 'submissions.approve-internal', 'reports.view',
             ],
             'Institution API Account' => ['api.access'],
             'Executive / Report Consumer' => ['dashboard.view', 'reports.view'],

@@ -1,34 +1,60 @@
-<?php $__env->startSection('title', 'Submission Compliance Report'); ?>
+<?php $__env->startSection('title', 'Submission Compliance'); ?>
+
+<?php $__env->startSection('breadcrumb'); ?>
+    <li class="breadcrumb-item"><a href="#">Reports</a></li>
+    <li class="breadcrumb-item active">Submission Compliance</li>
+<?php $__env->stopSection(); ?>
+
 <?php $__env->startSection('content'); ?>
-<ul class="nav nav-pills mb-3">
-    <li class="nav-item"><a class="nav-link" href="<?php echo e(route('reports.consolidated')); ?>">Consolidated</a></li>
-    <li class="nav-item"><a class="nav-link active" href="<?php echo e(route('reports.compliance')); ?>">Submission Compliance</a></li>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link" href="<?php echo e(route('reports.consolidated')); ?>"><i class="bi bi-pie-chart me-1"></i>Consolidated</a></li>
+    <li class="nav-item"><a class="nav-link active" href="<?php echo e(route('reports.compliance')); ?>"><i class="bi bi-check2-square me-1"></i>Submission Compliance</a></li>
+    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('reports.export')): ?>
+    <li class="nav-item ms-auto"><a class="nav-link" href="<?php echo e(route('reports.export')); ?>"><i class="bi bi-download me-1"></i>Export CSV</a></li>
+    <?php endif; ?>
 </ul>
 
-<form method="GET" class="d-flex gap-2 mb-3">
-    <select name="period" class="form-select" style="width:auto">
-        <?php $__currentLoopData = $periods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($p); ?>" <?php if($period === $p): echo 'selected'; endif; ?>><?php echo e($p); ?></option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    </select>
-    <button class="btn btn-primary">Apply</button>
-</form>
-
-<div class="card"><div class="card-body table-responsive p-0">
-    <table class="table table-striped mb-0">
-        <thead><tr><th>Institution</th><th>Dataset</th><th>Frequency</th><th>Submission</th><th>Status</th><th>Compliance</th></tr></thead>
-        <tbody>
-        <?php $__currentLoopData = $rows; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <tr>
-                <td><?php echo e($row['institution']->code); ?></td>
-                <td><?php echo e($row['dataset']->code); ?> — <?php echo e($row['dataset']->name); ?></td>
-                <td><?php echo e($row['dataset']->frequency); ?></td>
-                <td><?php if($row['submission']): ?><a href="<?php echo e(route('submissions.show', $row['submission'])); ?>"><?php echo e($row['submission']->reference); ?></a><?php else: ?> — <?php endif; ?></td>
-                <td><?php if($row['submission']): ?><span class="badge text-bg-<?php echo e($row['submission']->statusBadge()); ?>"><?php echo e(str_replace('_',' ',ucfirst($row['submission']->status))); ?></span><?php else: ?> <span class="text-muted">No submission</span> <?php endif; ?></td>
-                <td><?php if($row['compliant']): ?><span class="badge text-bg-success">Compliant</span><?php else: ?><span class="badge text-bg-danger">Outstanding</span><?php endif; ?></td>
-            </tr>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </tbody>
-    </table>
-</div></div>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-check2-square me-2"></i>Expected datasets vs. actual submissions</span>
+        <div class="d-flex gap-2 align-items-center">
+            <label class="form-label mb-0 small text-muted">Period</label>
+            <select id="filterPeriod" class="form-select form-select-sm" style="width:auto">
+                <?php $__currentLoopData = $periods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($p); ?>" <?php if($p === $period): echo 'selected'; endif; ?>><?php echo e($p); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </select>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="complianceTable" class="table table-hover align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Institution</th><th>Dataset</th><th>Frequency</th>
+                        <th>Submission</th><th>Status</th><th>Compliance</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+</div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+const complianceTable = vpDataTable('#complianceTable', '<?php echo e(route('reports.compliance.data', ['period' => $period])); ?>', [
+    { data: 'institution', name: 'institution' },
+    { data: 'dataset', name: 'dataset' },
+    { data: 'frequency', name: 'frequency' },
+    { data: 'submission', name: 'submission' },
+    { data: 'status', name: 'status' },
+    { data: 'compliance', name: 'compliance' }
+]);
+document.getElementById('filterPeriod').addEventListener('change', function () {
+    complianceTable.ajax.url('<?php echo e(route('reports.compliance.data')); ?>?period=' + encodeURIComponent(this.value)).load();
+});
+</script>
+<?php $__env->stopPush(); ?>
 
 <?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\viwanda-portal\resources\views/reports/compliance.blade.php ENDPATH**/ ?>

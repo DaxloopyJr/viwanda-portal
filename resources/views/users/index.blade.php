@@ -1,27 +1,42 @@
 @extends('layouts.app')
-@section('title', 'Users & Roles')
+
+@section('title', $ownOnly ? 'My Institution Users' : 'Users')
+
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="#">Administration</a></li>
+    <li class="breadcrumb-item active">Users</li>
+@endsection
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <p class="text-muted mb-0">Portal accounts and role assignments (RBAC via spatie/laravel-permission).</p>
-    <a href="{{ route('users.create') }}" class="btn btn-success"><i class="bi bi-plus-lg"></i> New User</a>
-</div>
-<div class="card"><div class="card-body table-responsive p-0">
-    <table class="table table-striped table-hover mb-0">
-        <thead><tr><th>Name</th><th>Email</th><th>Institution</th><th>Roles</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-        @foreach($users as $u)
-            <tr>
-                <td class="fw-semibold">{{ $u->name }}</td>
-                <td>{{ $u->email }}</td>
-                <td>{{ $u->institution?->code ?? '—' }}</td>
-                <td>@foreach($u->roles as $role)<span class="badge text-bg-primary me-1">{{ $role->name }}</span>@endforeach</td>
-                <td><span class="badge text-bg-{{ $u->is_active ? 'success' : 'secondary' }}">{{ $u->is_active ? 'Active' : 'Disabled' }}</span></td>
-                <td><a href="{{ route('users.edit', $u) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
-            </tr>
-        @endforeach
-        </tbody>
-    </table>
-</div>
-@if($users->hasPages())<div class="card-footer">{{ $users->links() }}</div>@endif
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-people me-2"></i>{{ $ownOnly ? 'User accounts of your institution' : 'All user accounts' }}</span>
+        <a href="{{ route('users.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>New User</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="usersTable" class="table table-hover align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Name</th><th>Email</th><th>Institution</th><th>Roles</th><th>Status</th>
+                        <th class="no-export" data-priority="1"></th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+vpDataTable('#usersTable', '{{ route('users.datatable') }}', [
+    { data: 'name', name: 'name' },
+    { data: 'email', name: 'email' },
+    { data: 'institution', name: 'institution' },
+    { data: 'roles', name: 'roles', orderable: false },
+    { data: 'status', name: 'status' },
+    { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end' }
+]);
+</script>
+@endpush
